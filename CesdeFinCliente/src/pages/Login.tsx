@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { validateForm, authValidationRules } from '../utils/validation';
+import { validateForm, loginValidationRules } from '../utils/validation';
 import { Alert, ErrorMessage, SubmitButton } from '../components/Alert';
 
 export const Login = () => {
@@ -37,10 +37,7 @@ export const Login = () => {
     e.preventDefault();
     
     // Validate form
-    const validationErrors = validateForm(formData, {
-      identifier: authValidationRules.identifier,
-      clave: authValidationRules.clave
-    });
+    const validationErrors = validateForm(formData, loginValidationRules);
     
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);

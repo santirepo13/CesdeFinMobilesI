@@ -96,8 +96,19 @@ export const validateForm = (formData: { [key: string]: string }, validationRule
   return errors;
 };
 
-// Authentication form validation rules
-export const authValidationRules: ValidationRules = {
+// Login form validation rules (less strict for password)
+export const loginValidationRules: ValidationRules = {
+  identifier: {
+    required: true,
+    minLength: 3
+  },
+  clave: {
+    required: true
+  }
+};
+
+// Registration form validation rules (strict password validation)
+export const registrationValidationRules: ValidationRules = {
   identifier: {
     required: true,
     minLength: 3
@@ -131,6 +142,9 @@ export const authValidationRules: ValidationRules = {
     }
   }
 };
+
+// Keep for backward compatibility
+export const authValidationRules = registrationValidationRules;
 
 // Validate password match
 export const validatePasswordMatch = (password: string, confirmPassword: string): string | null => {

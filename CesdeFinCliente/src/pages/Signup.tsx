@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { validateForm, authValidationRules, validatePasswordMatch } from '../utils/validation';
+import { validateForm, registrationValidationRules, validatePasswordMatch } from '../utils/validation';
 import { Alert, ErrorMessage, SubmitButton } from '../components/Alert';
 
 export const Signup = () => {
@@ -40,13 +40,7 @@ export const Signup = () => {
     e.preventDefault();
     
     // Validate form
-    const validationErrors = validateForm(formData, {
-      nombre: authValidationRules.nombre,
-      usuario: authValidationRules.usuario,
-      correo: authValidationRules.correo,
-      clave: authValidationRules.clave,
-      confirmPassword: authValidationRules.confirmPassword
-    });
+    const validationErrors = validateForm(formData, registrationValidationRules);
     
     // Check password match
     const passwordMatchError = validatePasswordMatch(formData.clave, formData.confirmPassword);
