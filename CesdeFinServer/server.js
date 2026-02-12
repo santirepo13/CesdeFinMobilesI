@@ -1,7 +1,10 @@
 const express = require('express');
 const { MongoClient } = require('mongodb');
+const session = require('express-session');
 require('dotenv').config();
 const { userSchema, userIndexes, userHelpers } = require('./models/User');
+const authRoutes = require('./routes/auth');
+const { authenticate } = require('./middleware/auth');
 
 // MongoDB connection configuration
 const MONGODB_CONFIG = {
@@ -21,6 +24,18 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Session middleware
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'cesdefin-secret-key-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+}));
 
 // CORS middleware
 app.use((req, res, next) => {
@@ -110,16 +125,23 @@ function validateUser(req, res, next) {
 
 // Routes
 app.get('/', (req, res) => {
-    res.json({ 
+    res.json({
         message: 'CesdeFin Banking API Server',
         version: '0.0.1',
         database: db ? 'connected' : 'disconnected',
         endpoints: {
             health: '/api/health',
-            users: '/api/users'
+            users: '/api/users',
+            auth: '/api/auth'
         }
     });
 });
+
+// Authentication routes
+app.use('/api/auth', (req, res, next) => {
+    req.db = db;
+    next();
+}, authRoutes);
 
 app.get('/api/health', asyncHandler(async (req, res) => {
     if (!db) {
@@ -139,7 +161,7 @@ app.get('/api/health', asyncHandler(async (req, res) => {
     });
 }));
 
-app.get('/api/users', asyncHandler(async (req, res) => {
+app.get('/api/users', authenticate, asyncHandler(async (req, res) => {
     if (!db) {
         return res.status(500).json({ error: 'Database not connected' });
     }
@@ -147,7 +169,7 @@ app.get('/api/users', asyncHandler(async (req, res) => {
     const users = await db.collection('users')
         .find({})
         // Exclude password field
-        .project({ clave: 0 }) 
+        .project({ clave: 0 })
         .toArray();
     
     res.json({
@@ -157,7 +179,7 @@ app.get('/api/users', asyncHandler(async (req, res) => {
     });
 }));
 
-app.post('/api/users', validateUser, asyncHandler(async (req, res) => {
+app.post('/api/users', authenticate, validateUser, asyncHandler(async (req, res) => {
     if (!db) {
         return res.status(500).json({ error: 'Database not connected' });
     }
@@ -202,7 +224,7 @@ app.use((req, res) => {
     res.status(404).json({
         error: 'Endpoint not found',
         message: `Cannot ${req.method} ${req.originalUrl}`,
-        availableEndpoints: ['/api/health']
+        availableEndpoints: ['/api/health', '/api/auth']
     });
 });
 
