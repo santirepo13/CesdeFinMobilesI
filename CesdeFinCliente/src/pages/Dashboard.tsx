@@ -1,23 +1,16 @@
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 export const Dashboard = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [balance, setBalance] = useState<number>(0);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate('/login');
     }
   }, [isAuthenticated, isLoading, navigate]);
-
-  useEffect(() => {
-    if (user) {
-      setBalance(user.saldo);
-    }
-  }, [user]);
 
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('es-CO', {
@@ -62,7 +55,7 @@ export const Dashboard = () => {
           <div className="card mx-auto" style={{ maxWidth: '400px' }}>
             <div className="card-body">
               <h5 className="card-title">Saldo actual</h5>
-              <p className="card-text fs-4 text-success">{formatCurrency(balance)}</p>
+              <p className="card-text fs-4 text-success">{formatCurrency(user?.saldo || 0)}</p>
             </div>
           </div>
         </div>

@@ -8,11 +8,14 @@ import { Signup } from '../pages/Signup';
 import { Dashboard } from '../pages/Dashboard';
 import { Services } from '../pages/Services';
 import { Contact } from '../pages/Contact';
+import Deposit from '../pages/Deposit';
+import BankDeposit from '../pages/BankDeposit';
+import CardDeposit from '../pages/CardDeposit';
+import CashDeposit from '../pages/CashDeposit';
+import Withdraw from '../pages/Withdraw';
+import Transfer from '../pages/Transfer';
 
 // Placeholder components for routes not yet created
-const Deposit = () => <div className="container py-4"><h2>Consignar</h2><p>Página en construcción...</p></div>;
-const Withdraw = () => <div className="container py-4"><h2>Retirar</h2><p>Página en construcción...</p></div>;
-const Transfer = () => <div className="container py-4"><h2>Transferir</h2><p>Página en construcción...</p></div>;
 const History = () => <div className="container py-4"><h2>Movimientos</h2><p>Página en construcción...</p></div>;
 const EditUser = () => <div className="container py-4"><h2>Editar Usuario</h2><p>Página en construcción...</p></div>;
 const ChangePassword = () => <div className="container py-4"><h2>Cambiar Clave</h2><p>Página en construcción...</p></div>;
@@ -71,6 +74,30 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Deposit />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: 'deposit/bank',
+        element: (
+          <ProtectedRoute>
+            <BankDeposit />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: 'deposit/card',
+        element: (
+          <ProtectedRoute>
+            <CardDeposit />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: 'deposit/cash',
+        element: (
+          <ProtectedRoute>
+            <CashDeposit />
           </ProtectedRoute>
         )
       },

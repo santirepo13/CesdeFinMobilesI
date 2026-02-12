@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import type { User } from '../services/authService';
 import { login, register, logout, checkAuthStatus } from '../services/authService';
+import { getBalance } from '../services/bankingService';
 
 interface AuthContextType {
   user: User | null;
@@ -10,6 +11,7 @@ interface AuthContextType {
   login: (identifier: string, clave: string) => Promise<{ success: boolean; message: string }>;
   register: (usuario: string, clave: string, nombre: string, correo: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<{ success: boolean; message: string }>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,7 +38,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       try {
         const response = await checkAuthStatus();
         if (response.authenticated && response.user) {
-          setUser(response.user);
+          // Try to get the freshest balance from the banking API (avoids relying solely on session copy)
+          try {
+            const balanceRes = await getBalance();
+            if (balanceRes.success) {
+              setUser({ ...response.user, saldo: balanceRes.balance });
+            } else {
+              setUser(response.user);
+            }
+          } catch (err) {
+            console.error('Failed to fetch balance during auth check:', err);
+            setUser(response.user);
+          }
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -108,13 +121,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Refresh user data
+  const refreshUser = async () => {
+    try {
+      const response = await checkAuthStatus();
+      if (response.authenticated && response.user) {
+        setUser(response.user);
+      }
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
     isLoading,
     login: handleLogin,
     register: handleRegister,
-    logout: handleLogout
+    logout: handleLogout,
+    refreshUser
   };
 
   return (

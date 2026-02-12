@@ -100,17 +100,25 @@ router.post('/deposit', authenticate, async (req, res) => {
             { projection: { clave: 0 } }
         );
 
-        res.json({
-            success: true,
-            message: 'Depósito realizado exitosamente',
-            data: {
-                amount,
-                commission,
-                netAmount,
-                method,
-                newBalance: updatedUser.saldo,
-                transaction
+        // Update session with new balance and ensure it's saved before responding
+        req.session.user.saldo = updatedUser.saldo;
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error (deposit):', err);
             }
+
+            res.json({
+                success: true,
+                message: 'Depósito realizado exitosamente',
+                data: {
+                    amount,
+                    commission,
+                    netAmount,
+                    method,
+                    newBalance: updatedUser.saldo,
+                    transaction
+                }
+            });
         });
 
     } catch (error) {
@@ -187,15 +195,23 @@ router.post('/withdraw', authenticate, async (req, res) => {
             { projection: { clave: 0 } }
         );
 
-        res.json({
-            success: true,
-            message: 'Retiro realizado exitosamente',
-            data: {
-                amount,
-                withdrawalCode,
-                newBalance: updatedUser.saldo,
-                transaction
+        // Update session with new balance and ensure it's saved before responding
+        req.session.user.saldo = updatedUser.saldo;
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error (withdraw):', err);
             }
+
+            res.json({
+                success: true,
+                message: 'Retiro realizado exitosamente',
+                data: {
+                    amount,
+                    withdrawalCode,
+                    newBalance: updatedUser.saldo,
+                    transaction
+                }
+            });
         });
 
     } catch (error) {
@@ -321,18 +337,26 @@ router.post('/transfer', authenticate, async (req, res) => {
             { projection: { clave: 0 } }
         );
 
-        res.json({
-            success: true,
-            message: 'Transferencia realizada exitosamente',
-            data: {
-                amount,
-                commission,
-                netAmount,
-                targetUser,
-                newBalance: updatedOriginUser.saldo,
-                originTransaction,
-                targetTransaction
+        // Update session with new balance and ensure it's saved before responding
+        req.session.user.saldo = updatedOriginUser.saldo;
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error (transfer):', err);
             }
+
+            res.json({
+                success: true,
+                message: 'Transferencia realizada exitosamente',
+                data: {
+                    amount,
+                    commission,
+                    netAmount,
+                    targetUser,
+                    newBalance: updatedOriginUser.saldo,
+                    originTransaction,
+                    targetTransaction
+                }
+            });
         });
 
     } catch (error) {

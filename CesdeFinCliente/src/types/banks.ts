@@ -1,0 +1,43 @@
+export enum Bank {
+  BANCOLOMBIA = 'Bancolombia',
+  BANCO_DE_BOGOTA = 'Banco de Bogotá',
+  DAVIVIENDA = 'Davivienda',
+  BBVA = 'BBVA',
+  BANCO_POPULAR = 'Banco Popular',
+  BANCO_OCCIDENTE = 'Banco Occidente',
+  BANCO_AGRARIO = 'Banco Agrario',
+  BANCO_CAJA_SOCIAL = 'Banco Caja Social',
+  BANCO_AV_VILLAS = 'Banco AV Villas',
+  BANCO_GNB_SUDAMERIS = 'Banco GNB Sudameris',
+  BANCO_COOMEVA = 'Banco Coomeva',
+  BANCO_DAVIVIENDA = 'Banco Davivienda',
+  BANCO_FALABELLA = 'Banco Falabella',
+  BANCO_FINANDINA = 'Banco Finandina',
+  BANCO_ITAU = 'Banco Itau',
+  BANCO_PICHINCHA = 'Banco Pichincha',
+  BANCO_SANTANDER = 'Banco Santander',
+  BANCO_SERFINANZA = 'Banco Serfinanza',
+  BANCO_W = 'Banco W'
+}
+
+export const BANK_OPTIONS = [
+  Bank.BANCOLOMBIA,
+  Bank.BANCO_DE_BOGOTA,
+  Bank.DAVIVIENDA,
+  Bank.BBVA,
+  Bank.BANCO_POPULAR,
+  Bank.BANCO_OCCIDENTE,
+  Bank.BANCO_AGRARIO,
+  Bank.BANCO_CAJA_SOCIAL,
+  Bank.BANCO_AV_VILLAS,
+  Bank.BANCO_GNB_SUDAMERIS,
+  Bank.BANCO_COOMEVA,
+  Bank.BANCO_DAVIVIENDA,
+  Bank.BANCO_FALABELLA,
+  Bank.BANCO_FINANDINA,
+  Bank.BANCO_ITAU,
+  Bank.BANCO_PICHINCHA,
+  Bank.BANCO_SANTANDER,
+  Bank.BANCO_SERFINANZA,
+  Bank.BANCO_W
+];
