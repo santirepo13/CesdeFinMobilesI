@@ -2,13 +2,17 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export interface Transaction {
-  id: string;
+  id?: string;
   tipo: string;
+  valor?: number;
   monto: number;
-  comision: number;
-  descripcion: string;
-  fecha: Date;
-  saldo: number;
+  comision?: number;
+  neto?: number;
+  metodo?: string;
+  descripcion?: string;
+  detalle?: string;
+  fecha: Date | string;
+  saldo?: number;
 }
 
 export interface DepositResponse {
@@ -38,6 +42,83 @@ export interface BalanceResponse {
   balance: number;
   error?: string;
 }
+
+export interface TransactionHistoryResponse {
+  success: boolean;
+  data?: {
+    transactions: Transaction[];
+    pagination: {
+      total: number;
+      limit: number;
+      offset: number;
+      hasMore: boolean;
+    };
+  };
+  error?: string;
+}
+
+export interface TransactionFilters {
+  type?: string;
+  date?: string;
+  limit?: number;
+  offset?: number;
+}
+
+// Get transaction history
+export const getTransactionHistory = async (filters: TransactionFilters = {}): Promise<TransactionHistoryResponse> => {
+  try {
+    const params = new URLSearchParams();
+    
+    if (filters.type) params.append('type', filters.type);
+    if (filters.date) params.append('date', filters.date);
+    if (filters.limit) params.append('limit', filters.limit.toString());
+    if (filters.offset) params.append('offset', filters.offset.toString());
+
+    const response = await fetch(`${API_BASE_URL}/banking/transactions?${params}`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || 'Error al obtener historial de transacciones'
+      };
+    }
+
+    return {
+      success: true,
+      data: data.data
+    };
+  } catch (error) {
+    console.error('Transaction history error:', error);
+    return {
+      success: false,
+      error: 'Error de conexión al servidor'
+    };
+  }
+};
+
+// Export transactions to CSV
+export const exportTransactionsToCSV = (transactions: Transaction[]): string => {
+  const headers = ['Fecha', 'Tipo', 'Monto', 'Comisión', 'Método', 'Detalle', 'Saldo'];
+  const csvContent = [
+    headers.join(','),
+    ...transactions.map(t => [
+      new Date(t.fecha).toLocaleString('es-CO'),
+      t.tipo,
+      (t.valor || t.monto).toString(),
+      t.comision?.toString() || '0',
+      t.metodo || '',
+      `"${t.detalle || t.descripcion || ''}"`,
+      t.saldo?.toString() || ''
+    ].join(','))
+  ].join('\n');
+
+  return csvContent;
+};
 
 // Bank deposit
 export const bankDeposit = async (banco: string, monto: number): Promise<DepositResponse> => {

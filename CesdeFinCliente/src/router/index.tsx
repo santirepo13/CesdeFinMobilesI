@@ -14,9 +14,9 @@ import CardDeposit from '../pages/CardDeposit';
 import CashDeposit from '../pages/CashDeposit';
 import Withdraw from '../pages/Withdraw';
 import Transfer from '../pages/Transfer';
+import TransactionHistory from '../pages/TransactionHistory';
 
 // Placeholder components for routes not yet created
-const History = () => <div className="container py-4"><h2>Movimientos</h2><p>Página en construcción...</p></div>;
 const EditUser = () => <div className="container py-4"><h2>Editar Usuario</h2><p>Página en construcción...</p></div>;
 const ChangePassword = () => <div className="container py-4"><h2>Cambiar Clave</h2><p>Página en construcción...</p></div>;
 
@@ -121,7 +121,7 @@ const router = createBrowserRouter([
         path: 'history',
         element: (
           <ProtectedRoute>
-            <History />
+            <TransactionHistory />
           </ProtectedRoute>
         )
       },
