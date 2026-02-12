@@ -1,6 +1,7 @@
 const express = require('express');
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
+const { userSchema, userIndexes, userHelpers } = require('./models/User');
 
 // MongoDB connection configuration
 const MONGODB_CONFIG = {
@@ -59,11 +60,11 @@ async function createIndexes() {
     try {
         const usersCollection = db.collection('users');
         
-        // Create unique index for username
-        await usersCollection.createIndex({ usuario: 1 }, { unique: true });
-        
-        // Create unique index for email
-        await usersCollection.createIndex({ correo: 1 }, { unique: true });
+        // Create indexes from userIndexes array
+        for (const index of userIndexes) {
+            const options = index.unique !== undefined ? { unique: index.unique } : {};
+            await usersCollection.createIndex(index.key, options);
+        }
         
         console.log('Database indexes ok');
     } catch (error) {
@@ -164,7 +165,8 @@ app.post('/api/users', validateUser, asyncHandler(async (req, res) => {
     const { usuario, clave, nombre, correo, saldo = 0 } = req.body;
     
     try {
-        const result = await db.collection('users').insertOne({
+        // Create new user following the schema structure
+        const newUser = {
             usuario,
             clave, //I will be hashing it soon -just not now
             nombre,
@@ -173,12 +175,14 @@ app.post('/api/users', validateUser, asyncHandler(async (req, res) => {
             movimientos: [],
             createdAt: new Date(),
             updatedAt: new Date()
-        });
+        };
         
-        res.status(201).json({ 
+        const result = await db.collection('users').insertOne(newUser);
+        
+        res.status(201).json({
             success: true,
             message: 'Usuario creado exitosamente',
-            userId: result.insertedId 
+            userId: result.insertedId
         });
     } catch (error) {
         if (error.code === 11000) {
@@ -194,7 +198,7 @@ app.post('/api/users', validateUser, asyncHandler(async (req, res) => {
 }));
 
 // 404 errors handler
-app.use('*', (req, res) => {
+app.use((req, res) => {
     res.status(404).json({
         error: 'Endpoint not found',
         message: `Cannot ${req.method} ${req.originalUrl}`,
