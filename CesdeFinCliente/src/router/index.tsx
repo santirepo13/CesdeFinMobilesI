@@ -15,10 +15,9 @@ import CashDeposit from '../pages/CashDeposit';
 import Withdraw from '../pages/Withdraw';
 import Transfer from '../pages/Transfer';
 import TransactionHistory from '../pages/TransactionHistory';
-
-// Placeholder components for routes not yet created
-const EditUser = () => <div className="container py-4"><h2>Editar Usuario</h2><p>Página en construcción...</p></div>;
-const ChangePassword = () => <div className="container py-4"><h2>Cambiar Clave</h2><p>Página en construcción...</p></div>;
+import EditProfile from '../pages/EditProfile';
+import ChangePassword from '../pages/ChangePassword';
+import AccountSettings from '../pages/AccountSettings';
 
 const router = createBrowserRouter([
   {
@@ -126,10 +125,10 @@ const router = createBrowserRouter([
         )
       },
       {
-        path: 'edit-user',
+        path: 'edit-profile',
         element: (
           <ProtectedRoute>
-            <EditUser />
+            <EditProfile />
           </ProtectedRoute>
         )
       },
@@ -138,6 +137,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <ChangePassword />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: 'account-settings',
+        element: (
+          <ProtectedRoute>
+            <AccountSettings />
           </ProtectedRoute>
         )
       }

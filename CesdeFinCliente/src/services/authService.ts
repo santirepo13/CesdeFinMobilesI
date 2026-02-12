@@ -28,6 +28,32 @@ export interface AuthStatusResponse {
   user?: User;
 }
 
+export interface ProfileUpdateResponse {
+  success: boolean;
+  message: string;
+  user?: User;
+  error?: string;
+}
+
+export interface UsernameUpdateResponse {
+  success: boolean;
+  message: string;
+  user?: User;
+  error?: string;
+}
+
+export interface PasswordChangeResponse {
+  success: boolean;
+  message: string;
+  error?: string;
+}
+
+export interface DeleteAccountResponse {
+  success: boolean;
+  message: string;
+  error?: string;
+}
+
 // Login user
 export const login = async (identifier: string, clave: string): Promise<LoginResponse> => {
   try {
@@ -190,4 +216,153 @@ export const getPasswordValidationError = (password: string): string => {
   }
   
   return '';
+};
+
+// Update user profile
+export const updateProfile = async (
+  correo?: string
+): Promise<ProfileUpdateResponse> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ correo }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.error || 'Error al actualizar perfil',
+        error: data.error || 'Error al actualizar perfil'
+      };
+    }
+
+    return {
+      success: true,
+      message: data.message || 'Perfil actualizado exitosamente',
+      user: data.user
+    };
+  } catch (error) {
+    console.error('Profile update error:', error);
+    return {
+      success: false,
+      message: 'Error de conexión al servidor',
+      error: 'Error de conexión al servidor'
+    };
+  }
+};
+
+// Update username
+export const updateUsername = async (
+  nuevoUsuario: string
+): Promise<UsernameUpdateResponse> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/username`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ nuevoUsuario }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.error || 'Error al actualizar nombre de usuario',
+        error: data.error || 'Error al actualizar nombre de usuario'
+      };
+    }
+
+    return {
+      success: true,
+      message: data.message || 'Nombre de usuario actualizado exitosamente',
+      user: data.user
+    };
+  } catch (error) {
+    console.error('Username update error:', error);
+    return {
+      success: false,
+      message: 'Error de conexión al servidor',
+      error: 'Error de conexión al servidor'
+    };
+  }
+};
+
+// Change password
+export const changePassword = async (
+  claveActual: string,
+  nuevaClave: string
+): Promise<PasswordChangeResponse> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/password`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ claveActual, nuevaClave }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.error || 'Error al cambiar contraseña',
+        error: data.error || 'Error al cambiar contraseña'
+      };
+    }
+
+    return {
+      success: true,
+      message: data.message || 'Contraseña actualizada exitosamente'
+    };
+  } catch (error) {
+    console.error('Password change error:', error);
+    return {
+      success: false,
+      message: 'Error de conexión al servidor',
+      error: 'Error de conexión al servidor'
+    };
+  }
+};
+
+// Delete user account
+export const deleteAccount = async (): Promise<DeleteAccountResponse> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/account`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.error || 'Error al eliminar cuenta',
+        error: data.error || 'Error al eliminar cuenta'
+      };
+    }
+
+    return {
+      success: true,
+      message: data.message || 'Cuenta eliminada exitosamente'
+    };
+  } catch (error) {
+    console.error('Account deletion error:', error);
+    return {
+      success: false,
+      message: 'Error de conexión al servidor',
+      error: 'Error de conexión al servidor'
+    };
+  }
 };

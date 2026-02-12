@@ -121,36 +121,6 @@ export const Dashboard = () => {
               </div>
             </div>
           </div>
-
-          <div className="col-md-4 col-lg-3">
-            <div className="card h-100 shadow-sm">
-              <div className="card-body d-flex flex-column justify-content-center">
-                <h5 className="card-title">Editar usuario</h5>
-                <p className="card-text">Cambiar tu nombre de usuario.</p>
-                <button 
-                  onClick={() => navigate('/edit-user')}
-                  className="btn btn-secondary mt-auto w-100"
-                >
-                  Cambiar nombre
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-md-4 col-lg-3">
-            <div className="card h-100 shadow-sm">
-              <div className="card-body d-flex flex-column justify-content-center">
-                <h5 className="card-title">Cambiar clave</h5>
-                <p className="card-text">Actualiza tu contraseña.</p>
-                <button 
-                  onClick={() => navigate('/change-password')}
-                  className="btn btn-secondary mt-auto w-100"
-                >
-                  Cambiar clave
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </main>

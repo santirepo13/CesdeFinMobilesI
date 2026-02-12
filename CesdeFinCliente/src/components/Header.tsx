@@ -112,6 +112,19 @@ export const Header = () => {
                       <li><span className="dropdown-item-text">Usuario: {user?.usuario}</span></li>
                       <li><hr className="dropdown-divider" /></li>
                       <li>
+                        <Link className="dropdown-item" to="/account-settings" onClick={handleLinkClick}>
+                          <i className="bi bi-gear me-2"></i>
+                          Configuración de Cuenta
+                        </Link>
+                      </li>
+                      <li>
+                        <Link className="dropdown-item" to="/history" onClick={handleLinkClick}>
+                          <i className="bi bi-clock-history me-2"></i>
+                          Historial de Transacciones
+                        </Link>
+                      </li>
+                      <li><hr className="dropdown-divider" /></li>
+                      <li>
                         <button className="dropdown-item" onClick={handleLogout}>
                           <i className="bi bi-box-arrow-right me-2"></i>
                           Cerrar Sesión
