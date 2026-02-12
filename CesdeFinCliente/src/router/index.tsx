@@ -9,6 +9,14 @@ import { Dashboard } from '../pages/Dashboard';
 import { Services } from '../pages/Services';
 import { Contact } from '../pages/Contact';
 
+// Placeholder components for routes not yet created
+const Deposit = () => <div className="container py-4"><h2>Consignar</h2><p>Página en construcción...</p></div>;
+const Withdraw = () => <div className="container py-4"><h2>Retirar</h2><p>Página en construcción...</p></div>;
+const Transfer = () => <div className="container py-4"><h2>Transferir</h2><p>Página en construcción...</p></div>;
+const History = () => <div className="container py-4"><h2>Movimientos</h2><p>Página en construcción...</p></div>;
+const EditUser = () => <div className="container py-4"><h2>Editar Usuario</h2><p>Página en construcción...</p></div>;
+const ChangePassword = () => <div className="container py-4"><h2>Cambiar Clave</h2><p>Página en construcción...</p></div>;
+
 const router = createBrowserRouter([
   {
     path: '/',
@@ -55,6 +63,54 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Contact />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: 'deposit',
+        element: (
+          <ProtectedRoute>
+            <Deposit />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: 'withdraw',
+        element: (
+          <ProtectedRoute>
+            <Withdraw />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: 'transfer',
+        element: (
+          <ProtectedRoute>
+            <Transfer />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: 'history',
+        element: (
+          <ProtectedRoute>
+            <History />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: 'edit-user',
+        element: (
+          <ProtectedRoute>
+            <EditUser />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: 'change-password',
+        element: (
+          <ProtectedRoute>
+            <ChangePassword />
           </ProtectedRoute>
         )
       }
