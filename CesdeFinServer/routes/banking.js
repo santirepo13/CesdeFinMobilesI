@@ -7,7 +7,7 @@ const COMMISSION_RATES = {
     banco: 0.01,      
     tarjeta: 0.025,   
     efectivo: 0.005,  
-    transferencia: 0.0025  
+    transferencia: 0.005  
 };
 
 // Helper function to generate withdrawal code
@@ -270,32 +270,32 @@ router.post('/transfer', authenticate, async (req, res) => {
             });
         }
 
-        if (originUser.saldo < amount) {
+        // Calculate commission first to check if user has enough funds
+        const commission = Math.round(amount * COMMISSION_RATES.transferencia);
+        const totalDebit = amount + commission;
+
+        if (originUser.saldo < totalDebit) {
             return res.status(400).json({
                 error: 'Fondos insuficientes',
-                message: 'Saldo disponible: $' + originUser.saldo.toLocaleString('es-CO')
+                message: 'Saldo disponible: $' + originUser.saldo.toLocaleString('es-CO') + ', Total requerido: $' + totalDebit.toLocaleString('es-CO')
             });
         }
-
-        // Calculate commission and net amount
-        const commission = Math.round(amount * COMMISSION_RATES.transferencia);
-        const netAmount = amount - commission;
 
         // Create transaction records
         const originTransaction = createTransaction(
             'transferencia',
             -amount,
             commission,
-            -amount,
+            -totalDebit,
             '',
             `Transferencia a ${targetUser}`
         );
 
         const targetTransaction = createTransaction(
             'transferencia',
-            netAmount,
+            amount,
             0,
-            netAmount,
+            amount,
             '',
             `Transferencia de ${currentUser.usuario}`
         );
@@ -305,22 +305,22 @@ router.post('/transfer', authenticate, async (req, res) => {
         
         try {
             await session.withTransaction(async () => {
-                // Update origin user
+                // Update origin user (charge amount + commission)
                 await usersCollection.updateOne(
                     { usuario: currentUser.usuario },
                     {
-                        $inc: { saldo: -amount },
+                        $inc: { saldo: -totalDebit },
                         $push: { movimientos: originTransaction },
                         $set: { updatedAt: new Date() }
                     },
                     { session }
                 );
 
-                // Update target user
+                // Update target user (receive full amount)
                 await usersCollection.updateOne(
                     { usuario: targetUser },
                     {
-                        $inc: { saldo: netAmount },
+                        $inc: { saldo: amount },
                         $push: { movimientos: targetTransaction },
                         $set: { updatedAt: new Date() }
                     },
@@ -350,7 +350,7 @@ router.post('/transfer', authenticate, async (req, res) => {
                 data: {
                     amount,
                     commission,
-                    netAmount,
+                    totalDebit,
                     targetUser,
                     newBalance: updatedOriginUser.saldo,
                     originTransaction,
@@ -473,7 +473,7 @@ router.get('/commission-rates', authenticate, (req, res) => {
                 banco: '1%',
                 tarjeta: '2.5%',
                 efectivo: '0.5%',
-                transferencia: '0.25%'
+                transferencia: '0.5%'
             }
         }
     });
