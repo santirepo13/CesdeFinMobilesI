@@ -4,6 +4,7 @@ const session = require('express-session');
 require('dotenv').config();
 const { userSchema, userIndexes, userHelpers } = require('./models/User');
 const authRoutes = require('./routes/auth');
+const bankingRoutes = require('./routes/banking');
 const { authenticate } = require('./middleware/auth');
 
 // MongoDB connection configuration
@@ -132,7 +133,8 @@ app.get('/', (req, res) => {
         endpoints: {
             health: '/api/health',
             users: '/api/users',
-            auth: '/api/auth'
+            auth: '/api/auth',
+            banking: '/api/banking'
         }
     });
 });
@@ -142,6 +144,12 @@ app.use('/api/auth', (req, res, next) => {
     req.db = db;
     next();
 }, authRoutes);
+
+// Banking routes
+app.use('/api/banking', (req, res, next) => {
+    req.db = db;
+    next();
+}, bankingRoutes);
 
 app.get('/api/health', asyncHandler(async (req, res) => {
     if (!db) {
@@ -224,7 +232,7 @@ app.use((req, res) => {
     res.status(404).json({
         error: 'Endpoint not found',
         message: `Cannot ${req.method} ${req.originalUrl}`,
-        availableEndpoints: ['/api/health', '/api/auth']
+        availableEndpoints: ['/api/health', '/api/auth', '/api/banking']
     });
 });
 
