@@ -1,5 +1,7 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { AuthProvider } from '../hooks/useAuth';
 import { Layout } from '../components/Layout';
+import { ProtectedRoute, PublicRoute } from '../components/ProtectedRoute';
 import { Home } from '../pages/Home';
 import { Login } from '../pages/Login';
 import { Signup } from '../pages/Signup';
@@ -18,28 +20,52 @@ const router = createBrowserRouter([
       },
       {
         path: 'login',
-        element: <Login />
+        element: (
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        )
       },
       {
         path: 'signup',
-        element: <Signup />
+        element: (
+          <PublicRoute>
+            <Signup />
+          </PublicRoute>
+        )
       },
       {
         path: 'dashboard',
-        element: <Dashboard />
+        element: (
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        )
       },
       {
         path: 'services',
-        element: <Services />
+        element: (
+          <ProtectedRoute>
+            <Services />
+          </ProtectedRoute>
+        )
       },
       {
         path: 'contact',
-        element: <Contact />
+        element: (
+          <ProtectedRoute>
+            <Contact />
+          </ProtectedRoute>
+        )
       }
     ]
   }
 ]);
 
 export const AppRouter = () => {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 };
