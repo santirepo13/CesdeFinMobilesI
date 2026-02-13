@@ -1,19 +1,20 @@
+/**
+ * Banking Routes
+ * Handles core banking operations (deposit, withdraw, transfer, balance)
+ */
+
 const express = require('express');
 const { authenticate } = require('../middleware/auth');
+const BankingService = require('../services/bankingService');
+const UserService = require('../services/userService');
 const router = express.Router();
 
-// Commission rates
-const COMMISSION_RATES = {
-    banco: 0.01,      
-    tarjeta: 0.025,   
-    efectivo: 0.005,  
-    transferencia: 0.005  
-};
-
-// Helper function to generate withdrawal code
-function generateWithdrawalCode() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-}
+// Middleware to inject services
+router.use((req, res, next) => {
+    req.bankingService = new BankingService(req.db);
+    req.userService = new UserService(req.db);
+    next();
+});
 
 // Helper function to validate amount
 function validateAmount(amount) {
@@ -21,22 +22,8 @@ function validateAmount(amount) {
     return !isNaN(numAmount) && numAmount > 0;
 }
 
-// Helper function to create transaction record
-function createTransaction(type, amount, commission = 0, netAmount = amount, method = '', detail = '') {
-    return {
-        tipo: type,
-        valor: amount,
-        comision: commission,
-        neto: netAmount,
-        metodo: method,
-        detalle: detail,
-        fecha: new Date().toISOString()
-    };
-}
-
 // POST /api/banking/deposit - Deposit money with commission
 router.post('/deposit', authenticate, async (req, res) => {
-    const db = req.db;
     const { amount, method, detail = '' } = req.body;
     const currentUser = req.session.user;
 
@@ -55,53 +42,23 @@ router.post('/deposit', authenticate, async (req, res) => {
     }
 
     try {
-        const usersCollection = db.collection('users');
-        const user = await usersCollection.findOne({ usuario: currentUser.usuario });
-
+        // Verify user exists
+        const user = await req.userService.findByUsername(currentUser.usuario);
         if (!user) {
             return res.status(404).json({
                 error: 'Usuario no encontrado'
             });
         }
 
-        const commissionRate = COMMISSION_RATES[method.toLowerCase()];
-        const commission = Math.round(amount * commissionRate);
-        const netAmount = amount - commission;
-
-        // Create transaction record
-        const transaction = createTransaction(
-            'consignación',
-            amount,
-            commission,
-            netAmount,
-            method.charAt(0).toUpperCase() + method.slice(1),
+        const result = await req.bankingService.deposit(
+            currentUser.usuario,
+            parseFloat(amount),
+            method,
             detail
         );
 
-        // Update user balance and add transaction
-        const result = await usersCollection.updateOne(
-            { usuario: currentUser.usuario },
-            {
-                $inc: { saldo: netAmount },
-                $push: { movimientos: transaction },
-                $set: { updatedAt: new Date() }
-            }
-        );
-
-        if (result.matchedCount === 0) {
-            return res.status(404).json({
-                error: 'Usuario no encontrado'
-            });
-        }
-
-        // Get updated user data
-        const updatedUser = await usersCollection.findOne(
-            { usuario: currentUser.usuario },
-            { projection: { clave: 0 } }
-        );
-
-        // Update session with new balance and ensure it's saved before responding
-        req.session.user.saldo = updatedUser.saldo;
+        // Update session with new balance
+        req.session.user.saldo = result.newBalance;
         req.session.save((err) => {
             if (err) {
                 console.error('Session save error (deposit):', err);
@@ -110,14 +67,7 @@ router.post('/deposit', authenticate, async (req, res) => {
             res.json({
                 success: true,
                 message: 'Depósito realizado exitosamente',
-                data: {
-                    amount,
-                    commission,
-                    netAmount,
-                    method,
-                    newBalance: updatedUser.saldo,
-                    transaction
-                }
+                data: result
             });
         });
 
@@ -132,7 +82,6 @@ router.post('/deposit', authenticate, async (req, res) => {
 
 // POST /api/banking/withdraw - Withdraw money with code generation
 router.post('/withdraw', authenticate, async (req, res) => {
-    const db = req.db;
     const { amount } = req.body;
     const currentUser = req.session.user;
 
@@ -144,8 +93,7 @@ router.post('/withdraw', authenticate, async (req, res) => {
     }
 
     try {
-        const usersCollection = db.collection('users');
-        const user = await usersCollection.findOne({ usuario: currentUser.usuario });
+        const user = await req.userService.findByUsername(currentUser.usuario);
 
         if (!user) {
             return res.status(404).json({
@@ -153,50 +101,20 @@ router.post('/withdraw', authenticate, async (req, res) => {
             });
         }
 
-        if (user.saldo < amount) {
+        if (user.saldo < parseFloat(amount)) {
             return res.status(400).json({
                 error: 'Fondos insuficientes',
                 message: 'Saldo disponible: $' + user.saldo.toLocaleString('es-CO')
             });
         }
 
-        // Generate withdrawal code
-        const withdrawalCode = generateWithdrawalCode();
-
-        // Create transaction record
-        const transaction = createTransaction(
-            'retiro',
-            -amount,
-            0,
-            -amount,
-            '',
-            `Código de retiro: ${withdrawalCode}`
+        const result = await req.bankingService.withdraw(
+            currentUser.usuario,
+            parseFloat(amount)
         );
 
-        // Update user balance and add transaction
-        const result = await usersCollection.updateOne(
-            { usuario: currentUser.usuario },
-            {
-                $inc: { saldo: -amount },
-                $push: { movimientos: transaction },
-                $set: { updatedAt: new Date() }
-            }
-        );
-
-        if (result.matchedCount === 0) {
-            return res.status(404).json({
-                error: 'Usuario no encontrado'
-            });
-        }
-
-        // Get updated user data
-        const updatedUser = await usersCollection.findOne(
-            { usuario: currentUser.usuario },
-            { projection: { clave: 0 } }
-        );
-
-        // Update session with new balance and ensure it's saved before responding
-        req.session.user.saldo = updatedUser.saldo;
+        // Update session with new balance
+        req.session.user.saldo = result.newBalance;
         req.session.save((err) => {
             if (err) {
                 console.error('Session save error (withdraw):', err);
@@ -205,12 +123,7 @@ router.post('/withdraw', authenticate, async (req, res) => {
             res.json({
                 success: true,
                 message: 'Retiro realizado exitosamente',
-                data: {
-                    amount,
-                    withdrawalCode,
-                    newBalance: updatedUser.saldo,
-                    transaction
-                }
+                data: result
             });
         });
 
@@ -225,7 +138,6 @@ router.post('/withdraw', authenticate, async (req, res) => {
 
 // POST /api/banking/transfer - Transfer money to another user
 router.post('/transfer', authenticate, async (req, res) => {
-    const db = req.db;
     const { targetUser, amount } = req.body;
     const currentUser = req.session.user;
 
@@ -251,11 +163,9 @@ router.post('/transfer', authenticate, async (req, res) => {
     }
 
     try {
-        const usersCollection = db.collection('users');
-        
         // Get both users
-        const originUser = await usersCollection.findOne({ usuario: currentUser.usuario });
-        const targetUserObj = await usersCollection.findOne({ usuario: targetUser });
+        const originUser = await req.userService.findByUsername(currentUser.usuario);
+        const targetUserObj = await req.userService.findByUsername(targetUser);
 
         if (!originUser) {
             return res.status(404).json({
@@ -270,9 +180,9 @@ router.post('/transfer', authenticate, async (req, res) => {
             });
         }
 
-        // Calculate commission first to check if user has enough funds
-        const commission = Math.round(amount * COMMISSION_RATES.transferencia);
-        const totalDebit = amount + commission;
+        // Calculate commission and total debit
+        const commission = req.bankingService.calculateCommission(parseFloat(amount), 'transferencia');
+        const totalDebit = parseFloat(amount) + commission;
 
         if (originUser.saldo < totalDebit) {
             return res.status(400).json({
@@ -281,64 +191,14 @@ router.post('/transfer', authenticate, async (req, res) => {
             });
         }
 
-        // Create transaction records
-        const originTransaction = createTransaction(
-            'transferencia',
-            -amount,
-            commission,
-            -totalDebit,
-            '',
-            `Transferencia a ${targetUser}`
+        const result = await req.bankingService.transfer(
+            currentUser.usuario,
+            targetUser,
+            parseFloat(amount)
         );
 
-        const targetTransaction = createTransaction(
-            'transferencia',
-            amount,
-            0,
-            amount,
-            '',
-            `Transferencia de ${currentUser.usuario}`
-        );
-
-        // Update both users
-        const session = db.client.startSession();
-        
-        try {
-            await session.withTransaction(async () => {
-                // Update origin user (charge amount + commission)
-                await usersCollection.updateOne(
-                    { usuario: currentUser.usuario },
-                    {
-                        $inc: { saldo: -totalDebit },
-                        $push: { movimientos: originTransaction },
-                        $set: { updatedAt: new Date() }
-                    },
-                    { session }
-                );
-
-                // Update target user (receive full amount)
-                await usersCollection.updateOne(
-                    { usuario: targetUser },
-                    {
-                        $inc: { saldo: amount },
-                        $push: { movimientos: targetTransaction },
-                        $set: { updatedAt: new Date() }
-                    },
-                    { session }
-                );
-            });
-        } finally {
-            await session.endSession();
-        }
-
-        // Get updated user data
-        const updatedOriginUser = await usersCollection.findOne(
-            { usuario: currentUser.usuario },
-            { projection: { clave: 0 } }
-        );
-
-        // Update session with new balance and ensure it's saved before responding
-        req.session.user.saldo = updatedOriginUser.saldo;
+        // Update session with new balance
+        req.session.user.saldo = result.newBalance;
         req.session.save((err) => {
             if (err) {
                 console.error('Session save error (transfer):', err);
@@ -347,15 +207,7 @@ router.post('/transfer', authenticate, async (req, res) => {
             res.json({
                 success: true,
                 message: 'Transferencia realizada exitosamente',
-                data: {
-                    amount,
-                    commission,
-                    totalDebit,
-                    targetUser,
-                    newBalance: updatedOriginUser.saldo,
-                    originTransaction,
-                    targetTransaction
-                }
+                data: result
             });
         });
 
@@ -370,17 +222,12 @@ router.post('/transfer', authenticate, async (req, res) => {
 
 // GET /api/banking/balance - Get user balance
 router.get('/balance', authenticate, async (req, res) => {
-    const db = req.db;
     const currentUser = req.session.user;
 
     try {
-        const usersCollection = db.collection('users');
-        const user = await usersCollection.findOne(
-            { usuario: currentUser.usuario },
-            { projection: { clave: 0 } }
-        );
+        const balance = await req.bankingService.getBalance(currentUser.usuario);
 
-        if (!user) {
+        if (!balance) {
             return res.status(404).json({
                 error: 'Usuario no encontrado'
             });
@@ -388,12 +235,7 @@ router.get('/balance', authenticate, async (req, res) => {
 
         res.json({
             success: true,
-            data: {
-                usuario: user.usuario,
-                nombre: user.nombre,
-                saldo: user.saldo,
-                lastUpdated: user.updatedAt
-            }
+            data: balance
         });
 
     } catch (error) {
@@ -405,52 +247,34 @@ router.get('/balance', authenticate, async (req, res) => {
     }
 });
 
-// GET /api/banking/transactions - Get user transaction history
+// GET /api/banking/transactions - Get user transaction history (redirects to /api/history)
 router.get('/transactions', authenticate, async (req, res) => {
-    const db = req.db;
     const currentUser = req.session.user;
     const { limit = 50, offset = 0, type } = req.query;
 
     try {
-        const usersCollection = db.collection('users');
-        const user = await usersCollection.findOne(
-            { usuario: currentUser.usuario },
-            { projection: { clave: 0 } }
-        );
+        const HistoryService = require('../services/historyService');
+        const historyService = new HistoryService(req.db);
 
-        if (!user) {
+        const options = {
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            type
+        };
+
+        const result = await historyService.getTransactions(currentUser.usuario, options);
+
+        if (!result) {
             return res.status(404).json({
                 error: 'Usuario no encontrado'
             });
         }
 
-        let transactions = user.movimientos || [];
-
-        // Filter by type if specified
-        if (type) {
-            transactions = transactions.filter(t => t.tipo === type);
-        }
-
-        // Sort by date (newest first)
-        transactions.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
-        // Apply pagination
-        const totalCount = transactions.length;
-        const paginatedTransactions = transactions.slice(
-            parseInt(offset),
-            parseInt(offset) + parseInt(limit)
-        );
-
         res.json({
             success: true,
             data: {
-                transactions: paginatedTransactions,
-                pagination: {
-                    total: totalCount,
-                    limit: parseInt(limit),
-                    offset: parseInt(offset),
-                    hasMore: parseInt(offset) + parseInt(limit) < totalCount
-                }
+                transactions: result.transactions,
+                pagination: result.pagination
             }
         });
 
@@ -465,17 +289,12 @@ router.get('/transactions', authenticate, async (req, res) => {
 
 // GET /api/banking/commission-rates - Get commission rates
 router.get('/commission-rates', authenticate, (req, res) => {
+    const bankingService = new BankingService(req.db);
+    const rates = bankingService.getCommissionRates();
+
     res.json({
         success: true,
-        data: {
-            commissionRates: COMMISSION_RATES,
-            formatted: {
-                banco: '1%',
-                tarjeta: '2.5%',
-                efectivo: '0.5%',
-                transferencia: '0.5%'
-            }
-        }
+        data: rates
     });
 });
 

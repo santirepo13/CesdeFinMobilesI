@@ -5,6 +5,8 @@ require('dotenv').config();
 const { userSchema, userIndexes, userHelpers } = require('./models/User');
 const authRoutes = require('./routes/auth');
 const bankingRoutes = require('./routes/banking');
+const usersRoutes = require('./routes/users');
+const historyRoutes = require('./routes/history');
 const { authenticate } = require('./middleware/auth');
 
 // MongoDB connection configuration
@@ -103,35 +105,6 @@ function asyncHandler(fn) {
     };
 }
 
-// Validation middleware
-function validateUser(req, res, next) {
-    const { usuario, clave, nombre, correo } = req.body;
-    
-    if (!usuario || !clave || !nombre || !correo) {
-        return res.status(400).json({
-            error: 'Todos los campos son obligatorios',
-            required: ['usuario', 'clave', 'nombre', 'correo']
-        });
-    }
-    
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(correo)) {
-        return res.status(400).json({
-            error: 'Correo inválido'
-        });
-    }
-    
-    // Password validation
-    if (clave.length < 8) {
-        return res.status(400).json({
-            error: 'La contraseña debe tener al menos 8 caracteres'
-        });
-    }
-    
-    next();
-}
-
 // Routes
 app.get('/', (req, res) => {
     res.json({
@@ -140,9 +113,10 @@ app.get('/', (req, res) => {
         database: db ? 'connected' : 'disconnected',
         endpoints: {
             health: '/api/health',
-            users: '/api/users',
             auth: '/api/auth',
-            banking: '/api/banking'
+            users: '/api/users',
+            banking: '/api/banking',
+            history: '/api/history'
         }
     });
 });
@@ -158,6 +132,18 @@ app.use('/api/banking', (req, res, next) => {
     req.db = db;
     next();
 }, bankingRoutes);
+
+// Users routes
+app.use('/api/users', (req, res, next) => {
+    req.db = db;
+    next();
+}, usersRoutes);
+
+// History routes
+app.use('/api/history', (req, res, next) => {
+    req.db = db;
+    next();
+}, historyRoutes);
 
 app.get('/api/health', asyncHandler(async (req, res) => {
     if (!db) {
@@ -177,70 +163,14 @@ app.get('/api/health', asyncHandler(async (req, res) => {
     });
 }));
 
-app.get('/api/users', authenticate, asyncHandler(async (req, res) => {
-    if (!db) {
-        return res.status(500).json({ error: 'Database not connected' });
-    }
-    
-    const users = await db.collection('users')
-        .find({})
-        // Exclude password field
-        .project({ clave: 0 })
-        .toArray();
-    
-    res.json({
-        success: true,
-        count: users.length,
-        data: users
-    });
-}));
-
-app.post('/api/users', authenticate, validateUser, asyncHandler(async (req, res) => {
-    if (!db) {
-        return res.status(500).json({ error: 'Database not connected' });
-    }
-    
-    const { usuario, clave, nombre, correo, saldo = 0 } = req.body;
-    
-    try {
-        // Create new user following the schema structure
-        const newUser = {
-            usuario,
-            clave, //I will be hashing it soon -just not now
-            nombre,
-            correo,
-            saldo: parseFloat(saldo),
-            movimientos: [],
-            createdAt: new Date(),
-            updatedAt: new Date()
-        };
-        
-        const result = await db.collection('users').insertOne(newUser);
-        
-        res.status(201).json({
-            success: true,
-            message: 'Usuario creado exitosamente',
-            userId: result.insertedId
-        });
-    } catch (error) {
-        if (error.code === 11000) {
-            // Duplicate key error
-            const field = Object.keys(error.keyPattern)[0];
-            return res.status(400).json({
-                error: `${field} Duplicado`,
-                field
-            });
-        }
-        throw error;
-    }
-}));
+// Note: /api/users endpoints moved to routes/users.js with service layer
 
 // 404 errors handler
 app.use((req, res) => {
     res.status(404).json({
         error: 'Endpoint not found',
         message: `Cannot ${req.method} ${req.originalUrl}`,
-        availableEndpoints: ['/api/health', '/api/auth', '/api/banking']
+        availableEndpoints: ['/api/health', '/api/auth', '/api/users', '/api/banking', '/api/history']
     });
 });
 
