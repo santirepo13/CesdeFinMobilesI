@@ -5,9 +5,9 @@ const { MongoClient } = require('mongodb');
 
 // MongoDB connection configuration
 const MONGODB_CONFIG = {
-    // Update these values with your MongoDB connection details
-    uri: 'mongodb+srv://santirepo13:lkqXaSKrUefyXY6S@cluster0.ttmxkcv.mongodb.net/?appName=Cluster0',
-    databaseName: 'cajerovisual',
+    // Update these values with  MongoDB connection details
+    uri: '',
+    databaseName: '',
     options: {
         serverSelectionTimeoutMS: 5000,
         connectTimeoutMS: 10000

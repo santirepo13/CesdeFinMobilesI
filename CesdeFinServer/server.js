@@ -11,7 +11,7 @@ const { authenticate } = require('./middleware/auth');
 
 // MongoDB connection configuration
 const MONGODB_CONFIG = {
-    uri: process.env.MONGODB_URI || 'mongodb+srv://santirepo13:lkqXaSKrUefyXY6S@cluster0.ttmxkcv.mongodb.net/?appName=Cluster0',
+    uri: process.env.MONGODB_URI,
     databaseName: process.env.DB_NAME || 'CheckingAccountHandler',
     options: {
         serverSelectionTimeoutMS: 5000,
